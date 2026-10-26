@@ -45,16 +45,24 @@ jobs:
         with:
           vs-version: '[17.0,18.0)'
 
-      - name: Compiler Release - Diagnostic non signé
+      - name: Générer un certificat éphémère pour tester les manifestes ClickOnce
         shell: pwsh
         run: |
-          msbuild "src\CHTL_Navigateur_TMCD\CHTL_Navigateur_TMCD.csproj" /t:Rebuild /p:Configuration=Release /p:Platform=AnyCPU /p:SignManifests=false /m /v:minimal
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=CHTL-TMCD-TEST-NOT-TRUSTED" -CertStoreLocation "Cert:\CurrentUser\My" -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -KeyExportPolicy Exportable -NotAfter (Get-Date).AddDays(2)
+          if (!$cert) { throw "Certificat éphémère non créé" }
+          "VSTO_TEST_CERT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
+          Write-Host "Certificat local de test créé (jamais exporté)"
+
+      - name: Compiler Release - Diagnostic signé avec certificat temporaire
+        shell: pwsh
+        run: |
+          msbuild "src\CHTL_Navigateur_TMCD\CHTL_Navigateur_TMCD.csproj" /t:Rebuild /p:Configuration=Release /p:Platform=AnyCPU /p:SignManifests=true /p:ManifestCertificateThumbprint=$env:VSTO_TEST_CERT /p:BootstrapperEnabled=false /m /v:minimal
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Publier les binaires de diagnostic
         uses: actions/upload-artifact@v4
         with:
-          name: CHTL-Navigateur-TMCD-VSTO-NON-SIGNE
+          name: CHTL-Navigateur-TMCD-VSTO-TEST-NON-DEPLOYABLE
           path: src/CHTL_Navigateur_TMCD/bin/Release/**
           retention-days: 7
           if-no-files-found: error
