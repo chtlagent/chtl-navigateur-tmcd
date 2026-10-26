@@ -65,15 +65,15 @@ jobs:
           Copy-Item (Join-Path $src '*') $out -Recurse -Force
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE "CHTL_TMCD_SIGNATAIRE_PUBLIC.cer") $out
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE "EMPREINTE_SIGNATAIRE.txt") $out
-          $notice = @'
-TEST UNIQUEMENT - PAS UNE SIGNATURE DE PRODUCTION.
-Le certificat public (.cer) permet de verifier le signataire des manifestes.
-La cle privee n'est PAS incluse. Ce certificat est nouveau a chaque compilation.
-Installer un editeur de confiance donne confiance a TOUT code signe avec ce certificat.
-Ne pas importer ce certificat dans les magasins de confiance sans avoir
-verifie l'empreinte et etre autorise a modifier la confiance Windows.
-Favoriser a terme un certificat de signature approuve et durable.
-'@
+          $notice = @(
+            "TEST UNIQUEMENT - PAS UNE SIGNATURE DE PRODUCTION.",
+            "Le certificat PUBLIC correspond a celui du signataire des manifestes.",
+            "La cle privee n'est PAS incluse.",
+            "Un nouveau certificat est emis a chaque compilation.",
+            "Faire confiance a un editeur implique de faire confiance a tout code signe avec son certificat.",
+            "Verifier l'empreinte avant toute installation et conserver la politique de securite Windows.",
+            "Signer la version durable avec un certificat stable et approuve."
+          ) -join [Environment]::NewLine
           Set-Content -Path (Join-Path $out "LIRE_SECURITE_AVANT_INSTALLATION.txt") -Value $notice -Encoding UTF8
           Get-ChildItem $out -Recurse | Select-Object FullName,Length
 
