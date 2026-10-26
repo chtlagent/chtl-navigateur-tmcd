@@ -1,0 +1,17 @@
+# Aucun fichier hospitalier ni donnée réelle dans ce dépôt
+*.xls
+*.xlsx
+*.xlsm
+*.xlsb
+*.csv
+*.accdb
+*.mdb
+*.odc
+*.pdf
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo
+*.pfx
+*.snk
