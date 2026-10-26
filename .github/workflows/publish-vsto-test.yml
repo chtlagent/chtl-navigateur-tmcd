@@ -33,9 +33,14 @@ jobs:
       - name: Creer une signature temporaire non approuvee
         shell: pwsh
         run: |
-          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=CHTL-TMCD-TEST-NOT-TRUSTED" -CertStoreLocation "Cert:\CurrentUser\My" -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -KeyExportPolicy NonExportable -NotAfter (Get-Date).AddDays(2)
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=CHTL-TMCD-TEST-NOT-TRUSTED" -CertStoreLocation "Cert:\CurrentUser\My" -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -KeyExportPolicy NonExportable -NotAfter (Get-Date).AddDays(14)
           if (!$cert) { throw "Certificat de test non cree" }
           "VSTO_TEST_CERT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
+          $pubPath = Join-Path $env:GITHUB_WORKSPACE "CHTL_TMCD_SIGNATAIRE_PUBLIC.cer"
+          Export-Certificate -Cert $cert -FilePath $pubPath -Type CERT | Out-Null
+          Set-Content -Path (Join-Path $env:GITHUB_WORKSPACE "EMPREINTE_SIGNATAIRE.txt") -Value $cert.Thumbprint -Encoding ascii
+          Write-Host "Certificat PUBLIC exporte ; empreinte: $($cert.Thumbprint)"
+          Write-Host "La cle privee reste non exportable sur le runner ephemeral"
 
       - name: Publier un paquet ClickOnce de test
         shell: pwsh
@@ -58,12 +63,24 @@ jobs:
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           $src = Split-Path $env:VSTO_PATH -Parent
           Copy-Item (Join-Path $src '*') $out -Recurse -Force
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "CHTL_TMCD_SIGNATAIRE_PUBLIC.cer") $out
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE "EMPREINTE_SIGNATAIRE.txt") $out
+          $notice = @'
+TEST UNIQUEMENT - PAS UNE SIGNATURE DE PRODUCTION.
+Le certificat public (.cer) permet de verifier le signataire des manifestes.
+La cle privee n'est PAS incluse. Ce certificat est nouveau a chaque compilation.
+Installer un editeur de confiance donne confiance a TOUT code signe avec ce certificat.
+Ne pas importer ce certificat dans les magasins de confiance sans avoir
+verifie l'empreinte et etre autorise a modifier la confiance Windows.
+Favoriser a terme un certificat de signature approuve et durable.
+'@
+          Set-Content -Path (Join-Path $out "LIRE_SECURITE_AVANT_INSTALLATION.txt") -Value $notice -Encoding UTF8
           Get-ChildItem $out -Recurse | Select-Object FullName,Length
 
       - name: Telecharger le paquet de diagnostic non installeable
         uses: actions/upload-artifact@v4
         with:
-          name: CHTL-VSTO-CLICKONCE-TEST-NON-APPROUVE
+          name: CHTL-VSTO-TEST-AVEC-CERTIFICAT-PUBLIC
           path: publication-test/**
           retention-days: 7
           if-no-files-found: error
