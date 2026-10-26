@@ -1,0 +1,60 @@
+name: Compiler le Navigateur TMCD VSTO
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - ".github/workflows/build-vsto.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Récupérer les sources
+        uses: actions/checkout@v4
+
+      - name: Empêcher la publication des données hospitalières
+        shell: pwsh
+        run: |
+          $files = @(git ls-files)
+          $forbidden = @($files | Where-Object { $_ -match '(?i)\.(xlsx?|xlsm|xlsb|csv|accdb|mdb|odc|pdf)$' })
+          if ($forbidden.Count -gt 0) { throw "Fichiers confidentiels interdits: $($forbidden -join ', ')" }
+
+      - name: Vérifier Visual Studio 2022 / VSTO
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (!(Test-Path $vswhere)) { throw "vswhere introuvable" }
+          $vs = & $vswhere -version '[17.0,18.0)' -products '*' -property installationPath
+          if (!$vs) { throw "Visual Studio 2022 introuvable" }
+          Write-Host "Visual Studio : $vs"
+          $officeTargets = Join-Path $vs 'MSBuild\Microsoft\VisualStudio\v17.0\OfficeTools\Microsoft.VisualStudio.Tools.Office.targets'
+          if (!(Test-Path $officeTargets)) {
+            $officeTargets = Get-ChildItem $vs -Recurse -Filter 'Microsoft.VisualStudio.Tools.Office.targets' -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (!$officeTargets) { throw "Cibles VSTO indisponibles sur ce runner" }
+          Write-Host "Cibles VSTO : $officeTargets"
+
+      - name: Installer MSBuild dans le PATH
+        uses: microsoft/setup-msbuild@v3
+        with:
+          vs-version: '[17.0,18.0)'
+
+      - name: Compiler Release - Diagnostic non signé
+        shell: pwsh
+        run: |
+          msbuild "src\CHTL_Navigateur_TMCD\CHTL_Navigateur_TMCD.csproj" /t:Rebuild /p:Configuration=Release /p:Platform=AnyCPU /p:SignManifests=false /m /v:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Publier les binaires de diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHTL-Navigateur-TMCD-VSTO-NON-SIGNE
+          path: src/CHTL_Navigateur_TMCD/bin/Release/**
+          retention-days: 7
+          if-no-files-found: error
