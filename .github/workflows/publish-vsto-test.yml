@@ -1,0 +1,69 @@
+name: Preparer paquet ClickOnce VSTO de test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-vsto-test.yml"
+      - "src/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: windows-2022
+    steps:
+      - name: Recuperer les sources
+        uses: actions/checkout@v4
+
+      - name: Interdire les fichiers hospitaliers
+        shell: pwsh
+        run: |
+          $files = @(git ls-files)
+          $forbidden = @($files | Where-Object { $_ -match '(?i)\.(xls|xlsx|xlsm|xlsb|csv|accdb|mdb|odc|pdf)$' })
+          if ($forbidden.Count -gt 0) { throw "Fichiers hospitaliers interdits: $($forbidden -join ', ')" }
+
+      - name: Installer MSBuild Visual Studio 2022
+        uses: microsoft/setup-msbuild@v3
+        with:
+          vs-version: '[17.0,18.0)'
+
+      - name: Creer une signature temporaire non approuvee
+        shell: pwsh
+        run: |
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=CHTL-TMCD-TEST-NOT-TRUSTED" -CertStoreLocation "Cert:\CurrentUser\My" -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -KeyExportPolicy NonExportable -NotAfter (Get-Date).AddDays(2)
+          if (!$cert) { throw "Certificat de test non cree" }
+          "VSTO_TEST_CERT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
+
+      - name: Publier un paquet ClickOnce de test
+        shell: pwsh
+        run: |
+          $proj = "src\CHTL_Navigateur_TMCD\CHTL_Navigateur_TMCD.csproj"
+          $output = Join-Path $env:GITHUB_WORKSPACE "publish-test"
+          New-Item -ItemType Directory -Force -Path $output | Out-Null
+          msbuild $proj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:SignManifests=true /p:ManifestCertificateThumbprint=$env:VSTO_TEST_CERT /p:BootstrapperEnabled=false /p:UpdateEnabled=false /p:PublishDir="$output\" /p:PublishUrl="$output\" /v:minimal
+          if ($LASTEXITCODE -ne 0) { throw "Echec de publication MSBuild" }
+          $vsto = @(Get-ChildItem -Path "$env:GITHUB_WORKSPACE" -Filter "*.vsto" -Recurse -File)
+          if ($vsto.Count -eq 0) { throw "Aucun manifeste .vsto produit par Publish" }
+          Write-Host "Manifestes VSTO generes:"
+          $vsto | ForEach-Object { Write-Host $_.FullName }
+          "VSTO_PATH=$($vsto[0].FullName)" >> $env:GITHUB_ENV
+
+      - name: Rassembler les fichiers de publication de test
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:GITHUB_WORKSPACE "publication-test"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $src = Split-Path $env:VSTO_PATH -Parent
+          Copy-Item (Join-Path $src '*') $out -Recurse -Force
+          Get-ChildItem $out -Recurse | Select-Object FullName,Length
+
+      - name: Telecharger le paquet de diagnostic non installeable
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHTL-VSTO-CLICKONCE-TEST-NON-APPROUVE
+          path: publication-test/**
+          retention-days: 7
+          if-no-files-found: error
