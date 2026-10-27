@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CHTL – Pilotage TMCD</title>
+<link rel="stylesheet" href="app.css">
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+<header class="entete">
+  <img class="logo" src="logo-chtl.png" alt="Centre Hospitalier Tarbes-Lourdes">
+  <div class="bandeau" aria-hidden="true"><i class="o"></i><i class="b"></i><i class="v"></i></div>
+  <div class="titre">
+    <h1>Pilotage TMCD</h1>
+    <p id="classeur" class="classeur"></p>
+  </div>
+</header>
+
+<div id="avis" class="avis" role="status" hidden></div>
+
+<div class="recherche">
+  <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  <input id="q" type="text" autocomplete="off" spellcheck="false" placeholder="Rechercher une feuille…" aria-label="Rechercher une feuille" aria-controls="contenu">
+  <button id="effacer" class="effacer" type="button" aria-label="Effacer la recherche" hidden>&times;</button>
+</div>
+
+<div class="barre">
+  <button id="retour" type="button" class="btn" disabled title="Revenir à la feuille précédente">&larr; Retour</button>
+  <span class="espace"></span>
+  <button id="replier" type="button" class="btn btn-leger" title="Replier toutes les familles">Replier</button>
+  <button id="deplier" type="button" class="btn btn-leger" title="Déplier toutes les familles">Déplier</button>
+  <button id="actualiser" type="button" class="btn btn-leger" title="Relire la liste des feuilles" aria-label="Actualiser">&#8635;</button>
+</div>
+
+<main id="contenu" tabindex="-1"></main>
+
+<footer class="pied">
+  <div class="etat"><span id="pastille" class="pastille"></span><span id="etat">Connexion à Excel…</span></div>
+  <label id="autoLabel" class="auto" hidden title="Enregistre un paramètre dans ce classeur : le volet s'ouvrira automatiquement pour les utilisateurs ayant le complément. Pensez à enregistrer le classeur.">
+    <input type="checkbox" id="auto"> Ouvrir ce volet avec le classeur
+  </label>
+</footer>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="nav-core.js"></script>
+<script src="excel-adapter.js"></script>
+<script src="demo-adapter.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
