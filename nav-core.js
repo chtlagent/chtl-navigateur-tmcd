@@ -76,6 +76,8 @@
           score += (i === 0 ? 3 : (/[^a-z0-9]/.test(nom[i - 1]) ? 2 : 1));
         } else if (compact(j) && nomCompact.indexOf(compact(j)) >= 0) {
           score += 0.5;
+        } else if (e.famille.libelle && plie(e.famille.libelle).indexOf(j) >= 0) {
+          score += 0.3; /* le mot désigne la famille : on propose toutes ses feuilles */
         } else ok = false;
       });
       if (ok) {
@@ -135,8 +137,44 @@
         return null;
       },
       peutRevenir: function (existe) { return pile.some(function (id) { return id !== courant && existe(id); }); },
+      precedent: function (existe) {
+        for (var i = pile.length - 1; i >= 0; i--) if (pile[i] !== courant && existe(pile[i])) return pile[i];
+        return null;
+      },
       courant: function () { return courant; }
     };
+  }
+
+  /* Feuilles consultées récemment (la plus récente d'abord), sans doublon. */
+  function creerRecents(max) {
+    max = max || 8;
+    var liste = [];
+    return {
+      visiter: function (id) {
+        if (id == null) return;
+        liste = liste.filter(function (x) { return x !== id; });
+        liste.unshift(id);
+        if (liste.length > max) liste.length = max;
+      },
+      charger: function (ids) { liste = (ids || []).slice(0, max); },
+      ids: function () { return liste.slice(); },
+      lister: function (existe, exclure, n) {
+        return liste.filter(function (id) { return id !== exclure && existe(id); }).slice(0, n || 5);
+      }
+    };
+  }
+
+  function compterVisibles(feuilles) { return feuilles.filter(estVisible).length; }
+
+  /* Couleur d'onglet Excel : n'accepte que #RRGGBB (jamais de texte libre dans un style). */
+  function couleurOnglet(c) { return /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : ''; }
+
+  function famillePourId(groupes, id) {
+    for (var i = 0; i < groupes.familles.length; i++) {
+      var fa = groupes.familles[i];
+      if ((fa.separateur && fa.separateur.id === id) || fa.feuilles.some(function (f) { return f.id === id; })) return fa;
+    }
+    return null;
   }
 
   function signature(feuilles) {
@@ -144,5 +182,6 @@
   }
 
   return { plie: plie, compact: compact, grouper: grouper, toutesFeuilles: toutesFeuilles, rechercher: rechercher,
-    resoudreRaccourcis: resoudreRaccourcis, creerHistorique: creerHistorique, signature: signature, DEFAUTS: DEFAUTS, COULEURS: COULEURS };
+    resoudreRaccourcis: resoudreRaccourcis, creerHistorique: creerHistorique, signature: signature,
+    creerRecents: creerRecents, compterVisibles: compterVisibles, couleurOnglet: couleurOnglet, famillePourId: famillePourId, DEFAUTS: DEFAUTS, COULEURS: COULEURS };
 });

@@ -5,7 +5,7 @@
   var noms = ['Accueil', 'a. Famille A >>>', 'Synthèse A', 'Détail A', 'Paramètres A', 'Base cachée', 'b. Famille B >>>', 'Suivi 2026', 'Suivi 2025',
     'Suivi 2024', 'c. Famille C >>>', 'Balance', 'Graphique balance', 'd. Famille D >>>', 'Données D'];
   var seq = 0;
-  var feuilles = noms.map(function (n, i) { return { id: '{demo-' + (++seq) + '}', name: n, visibility: n === 'Base cachée' ? 'Hidden' : 'Visible', position: i, tabColor: '' }; });
+  var feuilles = noms.map(function (n, i) { return { id: '{demo-' + (++seq) + '}', name: n, visibility: n === 'Base cachée' ? 'Hidden' : 'Visible', position: i, tabColor: /Suivi/.test(n) ? '#2E9CCA' : /Balance|Graph/.test(n) ? '#C00000' : '' }; });
   var actif = feuilles[0].id;
   var cb = {};
   function copie() { return feuilles.map(function (f) { return Object.assign({}, f); }); }

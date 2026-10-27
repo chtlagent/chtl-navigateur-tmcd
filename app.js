@@ -6,12 +6,21 @@
   var demo = /[?&]demo=1\b/.test(location.search);
   var adapter = null, cfg = {}, feuilles = [], groupes = { familles: [], masquees: 0 }, actifId = null, sig = '';
   var histo = N.creerHistorique(50);
-  var ferme = {}, favoris = [];
+  var recents = N.creerRecents(8);
+  var ferme = {}, favoris = [], defilerVersActif = false;
   var stockCle = 'chtl.tmcd.v1';
 
   /* ---------- stockage local (par utilisateur, jamais dans le classeur) ---------- */
   function lire() { try { return JSON.parse(localStorage.getItem(stockCle + ':' + wbCle()) || '{}'); } catch (e) { return {}; } }
-  function ecrire() { try { localStorage.setItem(stockCle + ':' + wbCle(), JSON.stringify({ ferme: ferme, favoris: favoris })); } catch (e) { /* stockage indisponible */ } }
+  function ecrire() { try { localStorage.setItem(stockCle + ':' + wbCle(), JSON.stringify({ ferme: ferme, favoris: favoris, recents: recents.ids() })); } catch (e) { /* stockage indisponible */ } }
+
+  /* Toute arrivée sur une feuille (clic dans le volet ou action dans Excel) passe ici. */
+  function noterVisite(id) {
+    histo.visiter(id); recents.visiter(id); actifId = id; defilerVersActif = true;
+    var fa = N.famillePourId(groupes, id);
+    if (fa && ferme[fa.cle]) delete ferme[fa.cle];
+    ecrire();
+  }
   function wbCle() { return (adapter && adapter.nomClasseur && adapter.nomClasseur()) || 'defaut'; }
 
   /* ---------- utilitaires d'affichage ---------- */
@@ -55,10 +64,15 @@
     adapter.activer(id).then(function (r) {
       if (!r.ok) { toast('La feuille précédente n’est plus accessible.'); rafraichir(true); }
     });
-    actifId = id; render(); majBoutons();
+    recents.visiter(id); actifId = id; defilerVersActif = true; ecrire(); render();
   }
 
-  function majBoutons() { $('retour').disabled = !histo.peutRevenir(existe); }
+  function nomDe(id) { var f = feuilles.filter(function (x) { return x.id === id; })[0]; return f ? f.name : ''; }
+  function majBoutons() {
+    var p = histo.precedent(existe), b = $('retour');
+    b.disabled = p == null;
+    b.title = p == null ? 'Aucune feuille précédente' : 'Revenir à « ' + nomDe(p) + ' »';
+  }
 
   /* ---------- rendu ---------- */
   function ligne(f, fam, plages, avecFamille) {
@@ -66,6 +80,8 @@
     var b = el('button', 'feuille'); b.type = 'button'; b.dataset.id = f.id;
     if (f.id === actifId) b.setAttribute('aria-current', 'true');
     b.title = 'Ouvrir la feuille « ' + f.name + ' »';
+    var coul = N.couleurOnglet(f.tabColor);
+    if (coul) { var pt = el('span', 'pastille-tab'); pt.style.background = coul; pt.setAttribute('aria-hidden', 'true'); b.appendChild(pt); }
     var nom = el('span', 'nom'); surligner(nom, f.name, plages); b.appendChild(nom);
     if (avecFamille && fam) b.appendChild(el('span', 'tag t-' + (fam.couleur === 'bleu' ? 'bleu' : fam.couleur), fam.lettre ? fam.lettre + '. ' + fam.libelle : fam.libelle));
     b.addEventListener('click', function () { ouvrir(f); });
@@ -102,6 +118,22 @@
       b.textContent = (it.fav ? '★ ' : '') + (it.feuille && !it.fav ? it.feuille.name !== it.libelle ? it.libelle + ' · ' + it.feuille.name : it.libelle : it.libelle);
       if (it.feuille) { b.title = 'Ouvrir « ' + it.feuille.name + ' »'; b.addEventListener('click', function () { ouvrir(it.feuille); }); }
       else { b.disabled = true; b.title = 'Feuille introuvable dans ce classeur (renommée ou supprimée).'; }
+      box.appendChild(b);
+    });
+    wrap.appendChild(box);
+    return wrap;
+  }
+
+  function sectionRecents() {
+    var ids = recents.lister(existe, actifId, 5);
+    if (!ids.length) return null;
+    var wrap = el('section');
+    wrap.appendChild(el('h2', 'section-titre', 'Récents'));
+    var box = el('div', 'raccourcis');
+    ids.forEach(function (id) {
+      var f = feuilles.filter(function (x) { return x.id === id; })[0];
+      var b = el('button', 'puce recent', f.name); b.type = 'button'; b.title = 'Revenir à « ' + f.name + ' »';
+      b.addEventListener('click', function () { ouvrir(f); });
       box.appendChild(b);
     });
     wrap.appendChild(box);
@@ -148,13 +180,19 @@
       }
     } else {
       var s = sectionRaccourcis(); if (s) c.appendChild(s);
+      var rc = sectionRecents(); if (rc) c.appendChild(rc);
       c.appendChild(el('h2', 'section-titre', 'Familles'));
       groupes.familles.forEach(function (fa) { c.appendChild(famille(fa)); });
       if (!groupes.familles.length) c.appendChild(el('div', 'vide', 'Aucune feuille visible.'));
       if (groupes.masquees) c.appendChild(el('p', 'note', groupes.masquees + ' feuille' + (groupes.masquees > 1 ? 's masquées ne sont' : ' masquée n’est') + ' pas affichée' + (groupes.masquees > 1 ? 's' : '') + '.'));
     }
     c.scrollTop = pos;
-    etat(adapter.mode === 'demo' ? 'Aperçu hors Excel · ' + feuilles.length + ' feuilles (fictives)' : 'Connecté à Excel · ' + feuilles.length + ' feuilles', 'ok');
+    if (defilerVersActif) {
+      defilerVersActif = false;
+      var a = c.querySelector('.ligne.active'); if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest' });
+    }
+    var nb = N.compterVisibles(feuilles);
+    etat((adapter.mode === 'demo' ? 'Aperçu hors Excel · ' : 'Connecté à Excel · ') + nb + ' feuille' + (nb > 1 ? 's' : '') + ' visible' + (nb > 1 ? 's' : ''), 'ok');
     majBoutons();
   }
 
@@ -163,17 +201,16 @@
     return adapter.lister().then(function (r) {
       var nouvelle = N.signature(r.feuilles);
       var changeActif = r.actifId !== actifId;
-      if (changeActif) { histo.visiter(r.actifId); actifId = r.actifId; }
-      if (force || nouvelle !== sig || changeActif) {
-        sig = nouvelle; feuilles = r.feuilles; groupes = N.grouper(feuilles, cfg.familles);
-        render();
-      }
+      var change = force || nouvelle !== sig || changeActif;
+      if (change) { sig = nouvelle; feuilles = r.feuilles; groupes = N.grouper(feuilles, cfg.familles); }
+      if (changeActif) noterVisite(r.actifId);
+      if (change) render();
     }).catch(function (e) { etat('Erreur de lecture du classeur', 'ko'); avis('Lecture des feuilles impossible : ' + (e && e.message ? e.message : e), true); });
   }
 
   function surActivation(id) {
     if (id === actifId) return;
-    histo.visiter(id); actifId = id;
+    noterVisite(id);
     if (!existe(id)) rafraichir(true); else render();
   }
 
@@ -229,7 +266,8 @@
           $('contenu').appendChild(el('div', 'vide', 'Ouvrez le classeur TMCD dans Excel, puis cliquez sur « CHTL – Pilotage TMCD » dans le ruban.'));
           return;
         }
-        var s = lire(); ferme = s.ferme || {}; favoris = s.favoris || [];
+        var s = lire(); ferme = s.ferme || {}; favoris = s.favoris || []; recents.charger(s.recents);
+        try { if (Office.context.officeTheme && Office.context.officeTheme.isDarkTheme) document.documentElement.classList.add('sombre'); } catch (e) { /* thème par défaut */ }
         $('classeur').textContent = adapter.nomClasseur();
         if (adapter.mode === 'demo') {
           avis('Aperçu : classeur FICTIF, aucune donnée hospitalière.');

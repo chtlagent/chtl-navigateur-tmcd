@@ -5,18 +5,22 @@
   --encre:#11142A; --gris:#5B6275; --ligne:#E3E7EE; --fond:#F6F8FB; --blanc:#fff;
   --rayon:8px;
 }
+:root.sombre{
+  --bleu:#6AA6F5; --bleu-pale:#233650; --vert-pale:#243D27; --orange-pale:#47361E;
+  --encre:#F1F3F7; --gris:#AEB5C4; --ligne:#3C4352; --fond:#1E222B; --blanc:#272C37;
+}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{font:13px/1.4 "Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--encre);background:var(--fond);display:flex;flex-direction:column;min-width:240px}
 button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--bleu);outline-offset:1px}
 
-.entete{background:var(--blanc);padding:10px 12px 0}
-.logo{display:block;width:100%;max-width:260px;height:auto}
-.bandeau{display:flex;height:3px;margin:8px -12px 0}
-.bandeau i{flex:1}.bandeau .o{background:var(--orange)}.bandeau .b{background:var(--bleu)}.bandeau .v{background:var(--vert)}
-.titre{background:var(--bleu);color:#fff;margin:0 -12px;padding:8px 12px}
-.titre h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.2px}
+.entete{background:#fff;padding:8px 12px 0}
+.logo{display:block;width:auto;max-width:100%;height:38px;object-fit:contain;object-position:left}
+.bandeau{display:flex;height:3px;margin:7px -12px 0}
+.bandeau i{flex:1}.bandeau .o{background:var(--orange)}.bandeau .b{background:#134F9F}.bandeau .v{background:var(--vert)}
+.titre{background:#134F9F;color:#fff;margin:0 -12px;padding:6px 12px}
+.titre h1{margin:0;font-size:14px;font-weight:600;letter-spacing:.2px}
 .classeur{margin:1px 0 0;font-size:11px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .classeur:empty{display:none}
 
@@ -46,6 +50,8 @@ main{flex:1;overflow-y:auto;padding:2px 12px 12px;outline:none}
 .puce:hover{background:var(--bleu);color:#fff}
 .puce.actif{background:var(--bleu);color:#fff}
 .puce.absent{border-style:dashed;border-color:var(--ligne);color:var(--gris);font-weight:400;cursor:not-allowed;background:transparent}
+.puce.recent{height:26px;border-color:var(--ligne);color:var(--encre);font-weight:400;font-size:12px;border-radius:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.puce.recent:hover{background:var(--bleu-pale);color:var(--encre);border-color:var(--bleu)}
 .puce.fav{border-color:var(--orange);color:var(--encre)}
 .puce.fav:hover{background:var(--orange);color:var(--encre)}
 .puce.fav.actif{background:var(--orange);color:var(--encre)}
@@ -70,7 +76,7 @@ main{flex:1;overflow-y:auto;padding:2px 12px 12px;outline:none}
 .feuille{flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:32px;padding:4px 6px 4px 14px;border:0;background:transparent;text-align:left;cursor:pointer}
 .feuille:hover{background:var(--bleu-pale)}
 .feuille .nom{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pastille-tab{flex:none;width:8px;height:8px;border-radius:50%;background:var(--ligne)}
+.pastille-tab{flex:none;width:10px;height:10px;border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 .ligne.active .feuille{background:var(--bleu-pale);font-weight:600;box-shadow:inset 3px 0 0 var(--bleu)}
 .orange .ligne.active .feuille{background:var(--orange-pale);box-shadow:inset 3px 0 0 var(--orange)}
 .vert .ligne.active .feuille{background:var(--vert-pale);box-shadow:inset 3px 0 0 var(--vert)}

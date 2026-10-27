@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "familles": {
     "motifSeparateur": "^\\s*([A-Za-z])\\s*[.)]\\s+(.+?)\\s*(?:>{2,}|»+)?\\s*$",
     "libelleDebut": "Général"
