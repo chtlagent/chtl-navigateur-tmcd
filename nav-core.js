@@ -50,23 +50,86 @@
     return n;
   }
 
-  /* Nom automatique d'une famille, déduit des noms de feuilles :
-     1) feuille séparatrice « x. Titre » ou « Titre >>> » ; 2) premier mot commun à toutes les feuilles (≥ 2) ; sinon null. */
+  /* ---------- Nom automatique des familles : analyse des feuilles du classeur ouvert ----------
+     Ordre : 1) feuille séparatrice « x. Titre » / « Titre >>> » ; 2) famille d'une seule feuille = nom de la feuille ;
+     3) mot dominant dans les noms (« P&L », « BCA », « Matrice HR », « ICR 24-25 ») ;
+     4) section du classeur (dernière feuille séparatrice située avant) ; 5) liste des feuilles. */
   var RE_SEPARATEUR = /^\s*(?:[A-Za-z]\s*[.)]\s+(.+?)|(.+?)\s*(?:>{2,}|»+))\s*(?:>{2,}|»+)?\s*$/;
-  function nomDepuisFeuilles(feuilles) {
-    var titres = [];
-    feuilles.forEach(function (f) {
-      var m = RE_SEPARATEUR.exec(f.name);
-      if (m) { var t = (m[1] || m[2] || '').trim(); if (t.length >= 2) titres.push(t); }
+  var MOTS_VIDES = { de: 1, du: 1, des: 1, la: 1, le: 1, les: 1, et: 1, en: 1, au: 1, aux: 1, sur: 1, par: 1, pour: 1, and: 1, the: 1, of: 1, feuil: 1, feuille: 1, sheet: 1 };
+
+  function titreSeparateur(nom) {
+    var m = RE_SEPARATEUR.exec(nom);
+    if (!m) return '';
+    var t = (m[1] || m[2] || '').trim();
+    return t.length >= 2 ? t : '';
+  }
+  function motsDe(nom) { return String(nom).split(/[\s_\-–—:.,()\/]+/).filter(Boolean); }
+  function motUtile(m) { return m.length >= 2 && !/\d/.test(m) && !MOTS_VIDES[plie(m)]; }
+
+  /* Mot présent dans au moins 60 % des feuilles (et ≥ 2), étendu aux mots suivants communs, + suffixe numérique commun. */
+  function nomParMotDominant(feuilles) {
+    var n = feuilles.length;
+    if (n < 2) return null;
+    var stats = {}, ordre = [];
+    feuilles.forEach(function (f, idx) {
+      var vus = {};
+      motsDe(f.name).forEach(function (m, i) {
+        if (!motUtile(m)) return;
+        var k = plie(m);
+        if (vus[k]) return; vus[k] = true;
+        if (!stats[k]) { stats[k] = { affiche: m, nb: 0, pos: 0 }; ordre.push(k); }
+        stats[k].nb++; stats[k].pos += i;
+      });
     });
+    var seuil = Math.max(2, Math.ceil(n * 0.6)), best = null;
+    ordre.forEach(function (k) {
+      var s = stats[k];
+      if (s.nb < seuil) return;
+      if (!best || s.nb > stats[best].nb || (s.nb === stats[best].nb && s.pos < stats[best].pos)) best = k;
+    });
+    if (!best) return null;
+    var avec = feuilles.filter(function (f) { return motsDe(f.name).some(function (m) { return plie(m) === best; }); });
+    var nom = [stats[best].affiche];
+    for (;;) { /* prolonge : « Matrice » -> « Matrice HR » si tous les noms continuent par le même mot */
+      var suivants = avec.map(function (f) {
+        var w = motsDe(f.name), i = w.map(plie).indexOf(best); i = -1 === i ? -1 : i + nom.length;
+        return i >= 0 && i < w.length ? w[i] : null;
+      });
+      if (suivants[0] && motUtile(suivants[0]) && suivants.every(function (s) { return s && plie(s) === plie(suivants[0]); })) nom.push(suivants[0]); else break;
+    }
+    var suf = avec.map(function (f) { var m = /(\d[\d\-\/]*\d|\d)\s*$/.exec(f.name); return m ? m[1] : null; });
+    var res = nom.join(' ');
+    if (avec.length >= 2 && suf[0] && suf.every(function (s) { return s === suf[0]; })) res += ' ' + suf[0];
+    return res;
+  }
+
+  function nomListe(feuilles) {
+    var s = '';
+    for (var i = 0; i < feuilles.length; i++) {
+      var ajout = (s ? ' · ' : '') + feuilles[i].name;
+      if (s && (s + ajout).length > 30) return s + ' …';
+      s += ajout;
+    }
+    return s;
+  }
+
+  function sectionDe(f, seps) {
+    var cur = null;
+    for (var i = 0; i < seps.length; i++) { if (seps[i].position < f.position) cur = seps[i]; else break; }
+    return cur;
+  }
+
+  function nomAuto(fa, seps, utilises) {
+    var fs = fa.feuilles, titres = [];
+    fs.forEach(function (f) { var t = titreSeparateur(f.name); if (t) titres.push(t); });
     if (titres.length === 1) return titres[0];
-    if (titres.length > 1 && titres.length >= feuilles.length / 2) return 'Sections'; /* famille composée de feuilles séparatrices */
-    if (feuilles.length < 2) return null;
-    var mots = feuilles.map(function (f) { return String(f.name).split(/[\s_\-–.:]+/)[0]; });
-    var premier = mots[0];
-    if (premier.length < 2 || /^\d+$/.test(premier)) return null;
-    var ok = mots.every(function (m) { return plie(m) === plie(premier); });
-    return ok ? premier : null;
+    if (titres.length > 1 && titres.length >= fs.length / 2) return 'Sections';
+    if (fs.length === 1 && fa.couleurHex) return fs[0].name;
+    var mot = nomParMotDominant(fs);
+    if (mot) return mot;
+    var sec = fs.map(function (f) { return sectionDe(f, seps); });
+    if (sec[0] && sec.every(function (s) { return s === sec[0]; }) && !utilises[sec[0].titre]) return sec[0].titre;
+    return fa.couleurHex ? nomListe(fs) : 'Autres feuilles';
   }
 
   /* Regroupe les feuilles visibles en familles selon la couleur d'onglet.
@@ -75,24 +138,26 @@
     cfg = cfg || {};
     var noms = cfg.noms || {};
     var triees = feuilles.slice().sort(function (a, b) { return a.position - b.position; });
-    var familles = [], index = {}, masquees = 0;
+    var familles = [], index = {}, masquees = 0, seps = [];
     triees.forEach(function (f) {
       if (!estVisible(f)) { masquees++; return; }
+      var t = titreSeparateur(f.name);
+      if (t) seps.push({ position: f.position, titre: t });
       var hex = couleurOnglet(f.tabColor);
       var cle = hex || 'aucune';
       var fa = index[cle];
       if (!fa) {
-        fa = index[cle] = { cle: cle, couleurHex: hex, couleurAffichee: hex || GRIS_AUCUNE, libelleAuto: hex ? nomCouleur(hex) : 'Sans couleur', feuilles: [] };
+        fa = index[cle] = { cle: cle, couleurHex: hex, couleurAffichee: hex || GRIS_AUCUNE, couleurNom: hex ? nomCouleur(hex) : 'Sans couleur', feuilles: [] };
         familles.push(fa);
       }
       fa.feuilles.push(f);
     });
-    /* deux nuances différentes de même nom : « Bleu », « Bleu (2) » */
-    var vus = {};
+    var vus = {}, utilises = {};
     familles.forEach(function (fa) {
-      if (fa.couleurHex) { var deduit = nomDepuisFeuilles(fa.feuilles); if (deduit) fa.libelleAuto = deduit; }
-      vus[fa.libelleAuto] = (vus[fa.libelleAuto] || 0) + 1;
-      if (vus[fa.libelleAuto] > 1) fa.libelleAuto += ' (' + vus[fa.libelleAuto] + ')';
+      var auto = nomAuto(fa, seps, utilises) || fa.couleurNom;
+      utilises[auto] = true;
+      vus[auto] = (vus[auto] || 0) + 1;
+      fa.libelleAuto = vus[auto] > 1 ? auto + ' (' + vus[auto] + ')' : auto;
       var perso = noms[fa.cle];
       fa.personnalise = !!(perso && String(perso).trim());
       fa.libelle = fa.personnalise ? String(perso).trim() : fa.libelleAuto;
