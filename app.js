@@ -5,14 +5,14 @@
   var $ = function (id) { return document.getElementById(id); };
   var demo = /[?&]demo=1\b/.test(location.search);
   var adapter = null, cfg = {}, feuilles = [], groupes = { familles: [], masquees: 0 }, actifId = null, sig = '', classeur = '';
-  var histo = N.creerHistorique(50), recents = N.creerRecents(8);
-  var ferme = {}, favoris = [], noms = {}, defilerVersActif = false, edition = null;
-  var stockCle = 'chtl.nav.v2', cleClasseur = 'defaut';
+  var histo = N.creerHistorique(50);
+  var ferme = {}, noms = {}, defilerVersActif = false, edition = null;
+  var stockCle = 'chtl.nav.v3', cleClasseur = 'defaut';
 
   /* ---------- stockage local (par utilisateur, jamais dans le classeur) ---------- */
   function lire() { try { return JSON.parse(localStorage.getItem(stockCle + ':' + cleClasseur) || '{}'); } catch (e) { return {}; } }
   function ecrire() {
-    try { localStorage.setItem(stockCle + ':' + cleClasseur, JSON.stringify({ ferme: ferme, favoris: favoris, recents: recents.ids(), noms: noms })); }
+    try { localStorage.setItem(stockCle + ':' + cleClasseur, JSON.stringify({ ferme: ferme, noms: noms })); }
     catch (e) { /* stockage indisponible */ }
   }
 
@@ -38,7 +38,7 @@
 
   /* Toute arrivée sur une feuille (clic dans le volet ou action dans Excel) passe ici. */
   function noterVisite(id) {
-    histo.visiter(id); recents.visiter(id); actifId = id; defilerVersActif = true;
+    histo.visiter(id); actifId = id; defilerVersActif = true;
     var fa = N.famillePourId(groupes, id);
     if (fa && ferme[fa.cle]) delete ferme[fa.cle];
     ecrire();
@@ -59,7 +59,7 @@
     var id = sens < 0 ? histo.retour(existe) : histo.avancer(existe);
     if (id == null) { toast(sens < 0 ? 'Aucune feuille précédente.' : 'Aucune feuille suivante.'); majBoutons(); return; }
     adapter.activer(id).then(function (r) { if (!r.ok) { toast('Cette feuille n’est plus accessible.'); rafraichir(true); } });
-    recents.visiter(id); actifId = id; defilerVersActif = true; ecrire(); render();
+    actifId = id; defilerVersActif = true; ecrire(); render();
   }
 
   function majBoutons() {
@@ -70,12 +70,6 @@
   }
 
   /* ---------- rendu ---------- */
-  function estFav(f) { return favoris.some(function (x) { return x.id === f.id; }); }
-  function basculerFav(f) {
-    if (estFav(f)) favoris = favoris.filter(function (x) { return x.id !== f.id; }); else favoris.push({ id: f.id, name: f.name });
-    ecrire(); render();
-  }
-
   function ligne(f, fa, plages, avecFamille) {
     var li = el('div', 'ligne' + (f.id === actifId ? ' active' : ''));
     li.style.setProperty('--fc', couleurFam(fa));
@@ -86,38 +80,7 @@
     if (avecFamille && fa) b.appendChild(el('span', 'tag', fa.libelle));
     b.addEventListener('click', function () { ouvrir(f); });
     li.appendChild(b);
-    var e = el('button', 'etoile' + (estFav(f) ? ' on' : ''), estFav(f) ? '★' : '☆');
-    e.type = 'button'; e.title = estFav(f) ? 'Retirer des favoris' : 'Ajouter aux favoris'; e.setAttribute('aria-label', e.title);
-    e.addEventListener('click', function (ev) { ev.stopPropagation(); basculerFav(f); });
-    li.appendChild(e);
     return li;
-  }
-
-  function puces(titre, items) {
-    if (!items.length) return null;
-    var wrap = el('section'); wrap.appendChild(el('h2', 'section-titre', titre));
-    var box = el('div', 'raccourcis');
-    items.forEach(function (it) {
-      var b = el('button', 'puce ' + it.cls + (it.f.id === actifId ? ' actif' : ''), it.txt); b.type = 'button';
-      b.title = 'Ouvrir « ' + it.f.name + ' »'; b.addEventListener('click', function () { ouvrir(it.f); });
-      box.appendChild(b);
-    });
-    wrap.appendChild(box); return wrap;
-  }
-
-  function sectionRaccourcis() {
-    var items = [];
-    N.resoudreRaccourcis(feuilles, cfg.raccourcis, new Date().getFullYear()).forEach(function (r) {
-      if (r.feuille) items.push({ cls: '', f: r.feuille, txt: r.feuille.name !== r.def.libelle ? r.def.libelle + ' · ' + r.feuille.name : r.def.libelle });
-    });
-    favoris.forEach(function (fv) {
-      var f = feuilleDe(fv.id) || feuilles.filter(function (x) { return x.name === fv.name; })[0];
-      if (f && f.visibility === 'Visible') items.push({ cls: 'fav', f: f, txt: '★ ' + f.name });
-    });
-    return puces('Raccourcis', items);
-  }
-  function sectionRecents() {
-    return puces('Récents', recents.lister(existe, actifId, 5).map(function (id) { var f = feuilleDe(id); return { cls: 'recent', f: f, txt: f.name }; }));
   }
 
   function enteteNom(fa) {
@@ -173,8 +136,6 @@
         c.appendChild(box);
       }
     } else {
-      var s = sectionRaccourcis(); if (s) c.appendChild(s);
-      var rc = sectionRecents(); if (rc) c.appendChild(rc);
       c.appendChild(el('h2', 'section-titre', 'Familles (couleurs d’onglets)'));
       groupes.familles.forEach(function (fa) { c.appendChild(famille(fa)); });
       if (!groupes.familles.length) c.appendChild(el('div', 'vide', 'Aucune feuille visible.'));
@@ -265,7 +226,7 @@
           return;
         }
         cleClasseur = adapter.nomClasseur() || 'defaut';
-        var s = lire(); ferme = s.ferme || {}; favoris = s.favoris || []; noms = s.noms || {}; recents.charger(s.recents);
+        var s = lire(); ferme = s.ferme || {}; noms = s.noms || {};
         majTitre();
         try { if (Office.context.officeTheme && Office.context.officeTheme.isDarkTheme) document.documentElement.classList.add('sombre'); } catch (e) { /* thème par défaut */ }
         if (adapter.mode === 'demo') {

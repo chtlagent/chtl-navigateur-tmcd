@@ -54,10 +54,13 @@
      1) feuille séparatrice « x. Titre » ou « Titre >>> » ; 2) premier mot commun à toutes les feuilles (≥ 2) ; sinon null. */
   var RE_SEPARATEUR = /^\s*(?:[A-Za-z]\s*[.)]\s+(.+?)|(.+?)\s*(?:>{2,}|»+))\s*(?:>{2,}|»+)?\s*$/;
   function nomDepuisFeuilles(feuilles) {
-    for (var i = 0; i < feuilles.length; i++) {
-      var m = RE_SEPARATEUR.exec(feuilles[i].name);
-      if (m) { var t = (m[1] || m[2] || '').trim(); if (t.length >= 2) return t; }
-    }
+    var titres = [];
+    feuilles.forEach(function (f) {
+      var m = RE_SEPARATEUR.exec(f.name);
+      if (m) { var t = (m[1] || m[2] || '').trim(); if (t.length >= 2) titres.push(t); }
+    });
+    if (titres.length === 1) return titres[0];
+    if (titres.length > 1 && titres.length >= feuilles.length / 2) return 'Sections'; /* famille composée de feuilles séparatrices */
     if (feuilles.length < 2) return null;
     var mots = feuilles.map(function (f) { return String(f.name).split(/[\s_\-–.:]+/)[0]; });
     var premier = mots[0];
@@ -135,25 +138,6 @@
     return out;
   }
 
-  /* Raccourcis définis dans config.json, résolus sur les noms réels. Introuvable = feuille null (masqué dans le volet). */
-  function resoudreRaccourcis(feuilles, defs, annee) {
-    var visibles = feuilles.filter(estVisible).sort(function (a, b) { return a.position - b.position; });
-    return (defs || []).map(function (d) {
-      var re;
-      try { re = new RegExp(String(d.motif || '').replace(/\{annee\}/g, String(annee || new Date().getFullYear())), 'i'); }
-      catch (e) { return { def: d, feuille: null }; }
-      var cand = visibles.filter(function (f) { return re.test(f.name); }), pick = null;
-      if (cand.length) {
-        if (d.choix === 'dernier') pick = cand[cand.length - 1];
-        else if (d.choix === 'plusRecent') {
-          var num = function (f) { var m = /(\d{4})/.exec(f.name); return m ? parseInt(m[1], 10) : -1; };
-          pick = cand.reduce(function (a, b) { return num(b) > num(a) ? b : a; });
-        } else pick = cand[0];
-      }
-      return { def: d, feuille: pick };
-    });
-  }
-
   /* Historique Retour / Avant (comme les boutons latéraux d'une souris). */
   function creerHistorique(max) {
     max = max || 50;
@@ -187,23 +171,6 @@
     };
   }
 
-  /* Feuilles consultées récemment (la plus récente d'abord), sans doublon. */
-  function creerRecents(max) {
-    max = max || 8;
-    var liste = [];
-    return {
-      visiter: function (id) {
-        if (id == null) return;
-        liste = liste.filter(function (x) { return x !== id; });
-        liste.unshift(id);
-        if (liste.length > max) liste.length = max;
-      },
-      charger: function (ids) { liste = (ids || []).slice(0, max); },
-      ids: function () { return liste.slice(); },
-      lister: function (existe, exclure, n) { return liste.filter(function (id) { return id !== exclure && existe(id); }).slice(0, n || 5); }
-    };
-  }
-
   function compterVisibles(feuilles) { return feuilles.filter(estVisible).length; }
 
   function famillePourId(groupes, id) {
@@ -222,7 +189,7 @@
   }
 
   return { plie: plie, compact: compact, grouper: grouper, toutesFeuilles: toutesFeuilles, rechercher: rechercher,
-    resoudreRaccourcis: resoudreRaccourcis, creerHistorique: creerHistorique, creerRecents: creerRecents, signature: signature,
+    creerHistorique: creerHistorique, signature: signature,
     compterVisibles: compterVisibles, couleurOnglet: couleurOnglet, nomCouleur: nomCouleur, famillePourId: famillePourId,
     titreClasseur: titreClasseur, GRIS_AUCUNE: GRIS_AUCUNE };
 });

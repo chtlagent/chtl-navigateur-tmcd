@@ -1,10 +1,4 @@
 {
-  "version": "1.2.1",
-  "raccourcis": [
-    { "libelle": "Accueil", "motif": "^Accueil$", "choix": "premier" },
-    { "libelle": "TMCD le plus récent", "motif": "^TMCD (\\d{4})$", "choix": "plusRecent" },
-    { "libelle": "P&L CHTL", "motif": "^P&L CHTL$", "choix": "premier" },
-    { "libelle": "Contrôle DOT", "motif": "^DOT - Contrôle$", "choix": "premier" }
-  ],
+  "version": "1.2.2",
   "actualisationSecondes": 5
 }
