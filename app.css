@@ -20,9 +20,11 @@ button,input{font:inherit;color:inherit}
 .bandeau{display:flex;height:3px;margin:7px -12px 0}
 .bandeau i{flex:1}.bandeau .o{background:var(--orange)}.bandeau .b{background:#134F9F}.bandeau .v{background:var(--vert)}
 .titre{background:#134F9F;color:#fff;margin:0 -12px;padding:6px 12px}
-.titre h1{margin:0;font-size:14px;font-weight:600;letter-spacing:.2px}
-.classeur{margin:1px 0 0;font-size:11px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.classeur:empty{display:none}
+.titre h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sous-titre{margin:1px 0 0;font-size:11px;opacity:.85}
+.btn.nav{padding:0 8px;font-weight:600;color:var(--bleu)}
+.barre{flex-wrap:wrap}
+.btn-leger{font-size:12px}
 
 .avis{margin:8px 12px 0;padding:8px 10px;border-radius:var(--rayon);background:var(--orange-pale);border-left:4px solid var(--orange);font-size:12px}
 .avis.erreur{background:#FDECEC;border-left-color:#C62828}
@@ -56,8 +58,11 @@ main{flex:1;overflow-y:auto;padding:2px 12px 12px;outline:none}
 .puce.fav:hover{background:var(--orange);color:var(--encre)}
 .puce.fav.actif{background:var(--orange);color:var(--encre)}
 
-.famille{margin:6px 0;background:var(--blanc);border:1px solid var(--ligne);border-left:4px solid var(--bleu);border-radius:var(--rayon);overflow:hidden}
-.famille.vert{border-left-color:var(--vert)}.famille.orange{border-left-color:var(--orange)}
+.famille{--fc:#8A93A6;margin:6px 0;background:var(--blanc);border:1px solid var(--ligne);border-left:5px solid var(--fc);border-radius:var(--rayon);overflow:hidden}
+.swatch{flex:none;width:14px;height:14px;border-radius:4px;background:var(--fc);box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.swatch.vide{background:transparent;box-shadow:inset 0 0 0 2px var(--fc)}
+.fam-edit{width:100%;min-width:0;height:26px;padding:0 6px;border:1px solid var(--bleu);border-radius:5px;background:var(--blanc);color:var(--encre)}
+div.fam-bascule{cursor:default}
 .fam-tete{display:flex;align-items:center;width:100%;min-height:36px;padding:0 4px 0 6px;gap:6px}
 .fam-bascule{display:flex;align-items:center;gap:8px;flex:1;min-width:0;height:36px;border:0;background:transparent;cursor:pointer;text-align:left;font-weight:600}
 .chev{width:10px;height:10px;transition:transform .15s;flex:none}
@@ -77,15 +82,13 @@ main{flex:1;overflow-y:auto;padding:2px 12px 12px;outline:none}
 .feuille:hover{background:var(--bleu-pale)}
 .feuille .nom{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pastille-tab{flex:none;width:10px;height:10px;border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
-.ligne.active .feuille{background:var(--bleu-pale);font-weight:600;box-shadow:inset 3px 0 0 var(--bleu)}
-.orange .ligne.active .feuille{background:var(--orange-pale);box-shadow:inset 3px 0 0 var(--orange)}
-.vert .ligne.active .feuille{background:var(--vert-pale);box-shadow:inset 3px 0 0 var(--vert)}
+.ligne{--fc:#8A93A6}
+.ligne.active .feuille{background:var(--bleu-pale);background:color-mix(in srgb,var(--fc) 16%,var(--blanc));font-weight:600;box-shadow:inset 3px 0 0 var(--fc)}
 .etoile{flex:none;width:28px;height:28px;margin-right:2px;border:0;border-radius:6px;background:transparent;cursor:pointer;color:#B9BFCC;font-size:15px;line-height:1;opacity:0}
 .ligne:hover .etoile,.etoile:focus-visible,.etoile.on{opacity:1}
 .etoile.on{color:var(--orange)}
 .etoile:hover{background:var(--orange-pale)}
-.tag{flex:none;margin-left:auto;font-size:10px;padding:1px 6px;border-radius:9px;background:var(--bleu-pale);color:var(--bleu);white-space:nowrap}
-.tag.t-vert{background:var(--vert-pale);color:#2F6B1F}.tag.t-orange{background:var(--orange-pale);color:#8A4B00}
+.tag{flex:none;margin-left:auto;max-width:45%;overflow:hidden;text-overflow:ellipsis;font-size:10px;padding:1px 7px;border-radius:9px;background:var(--bleu-pale);background:color-mix(in srgb,var(--fc) 20%,var(--blanc));color:var(--encre);white-space:nowrap}
 mark{background:#FFE08A;color:inherit;border-radius:2px;padding:0 1px}
 .resultats{background:var(--blanc);border:1px solid var(--ligne);border-radius:var(--rayon);overflow:hidden}
 .vide{padding:18px 8px;text-align:center;color:var(--gris)}

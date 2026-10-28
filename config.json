@@ -1,9 +1,5 @@
 {
-  "version": "1.1.0",
-  "familles": {
-    "motifSeparateur": "^\\s*([A-Za-z])\\s*[.)]\\s+(.+?)\\s*(?:>{2,}|»+)?\\s*$",
-    "libelleDebut": "Général"
-  },
+  "version": "1.2.0",
   "raccourcis": [
     { "libelle": "Accueil", "motif": "^Accueil$", "choix": "premier" },
     { "libelle": "TMCD le plus récent", "motif": "^TMCD (\\d{4})$", "choix": "plusRecent" },

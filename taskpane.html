@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CHTL – Pilotage TMCD</title>
-<link rel="stylesheet" href="app.css?v=1.1.0">
+<title>CHTL – Navigateur de feuilles</title>
+<link rel="stylesheet" href="app.css?v=1.2.0">
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
 <body>
@@ -13,8 +13,8 @@
   <img class="logo" src="logo-chtl.png" alt="Centre Hospitalier Tarbes-Lourdes">
   <div class="bandeau" aria-hidden="true"><i class="o"></i><i class="b"></i><i class="v"></i></div>
   <div class="titre">
-    <h1>Pilotage TMCD</h1>
-    <p id="classeur" class="classeur"></p>
+    <h1 id="titre">Classeur Excel</h1>
+    <p class="sous-titre">Navigateur de feuilles</p>
   </div>
 </header>
 
@@ -27,7 +27,8 @@
 </div>
 
 <div class="barre">
-  <button id="retour" type="button" class="btn" disabled title="Revenir à la feuille précédente">&larr; Retour</button>
+  <button id="retour" type="button" class="btn nav" disabled title="Feuille précédente (Alt+←, bouton souris « précédent »)">&larr; Retour</button>
+  <button id="avant" type="button" class="btn nav" disabled title="Feuille suivante (Alt+→, bouton souris « suivant »)">Avant &rarr;</button>
   <span class="espace"></span>
   <button id="replier" type="button" class="btn btn-leger" title="Replier toutes les familles">Replier</button>
   <button id="deplier" type="button" class="btn btn-leger" title="Déplier toutes les familles">Déplier</button>
@@ -39,14 +40,14 @@
 <footer class="pied">
   <div class="etat"><span id="pastille" class="pastille"></span><span id="etat">Connexion à Excel…</span></div>
   <label id="autoLabel" class="auto" hidden title="Enregistre un paramètre dans ce classeur : le volet s'ouvrira automatiquement pour les utilisateurs ayant le complément. Pensez à enregistrer le classeur.">
-    <input type="checkbox" id="auto"> Ouvrir ce volet avec le classeur
+    <input type="checkbox" id="auto"> Ouvrir ce volet avec ce classeur
   </label>
 </footer>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="nav-core.js?v=1.1.0"></script>
-<script src="excel-adapter.js?v=1.1.0"></script>
-<script src="demo-adapter.js?v=1.1.0"></script>
-<script src="app.js?v=1.1.0"></script>
+<script src="nav-core.js?v=1.2.0"></script>
+<script src="excel-adapter.js?v=1.2.0"></script>
+<script src="demo-adapter.js?v=1.2.0"></script>
+<script src="app.js?v=1.2.0"></script>
 </body>
 </html>

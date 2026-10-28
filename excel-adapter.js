@@ -50,9 +50,12 @@
         coll.load(champs);
         var actif = coll.getActiveWorksheet();
         actif.load('id');
+        var nomOk = apiOk('1.7');
+        if (nomOk) ctx.workbook.load('name');
         return ctx.sync().then(function () {
           return {
             actifId: actif.id,
+            classeur: nomOk ? ctx.workbook.name : ExcelAdapter.nomClasseur(),
             feuilles: coll.items.map(function (w) {
               return { id: w.id, name: w.name, visibility: w.visibility, position: w.position, tabColor: tab ? (w.tabColor || '') : '' };
             })
