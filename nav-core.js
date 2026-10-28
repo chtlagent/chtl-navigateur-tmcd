@@ -50,6 +50,22 @@
     return n;
   }
 
+  /* Nom automatique d'une famille, déduit des noms de feuilles :
+     1) feuille séparatrice « x. Titre » ou « Titre >>> » ; 2) premier mot commun à toutes les feuilles (≥ 2) ; sinon null. */
+  var RE_SEPARATEUR = /^\s*(?:[A-Za-z]\s*[.)]\s+(.+?)|(.+?)\s*(?:>{2,}|»+))\s*(?:>{2,}|»+)?\s*$/;
+  function nomDepuisFeuilles(feuilles) {
+    for (var i = 0; i < feuilles.length; i++) {
+      var m = RE_SEPARATEUR.exec(feuilles[i].name);
+      if (m) { var t = (m[1] || m[2] || '').trim(); if (t.length >= 2) return t; }
+    }
+    if (feuilles.length < 2) return null;
+    var mots = feuilles.map(function (f) { return String(f.name).split(/[\s_\-–.:]+/)[0]; });
+    var premier = mots[0];
+    if (premier.length < 2 || /^\d+$/.test(premier)) return null;
+    var ok = mots.every(function (m) { return plie(m) === plie(premier); });
+    return ok ? premier : null;
+  }
+
   /* Regroupe les feuilles visibles en familles selon la couleur d'onglet.
      cfg.noms : libellés personnalisés par couleur ({ "#C00000": "TMCD" }). */
   function grouper(feuilles, cfg) {
@@ -71,6 +87,7 @@
     /* deux nuances différentes de même nom : « Bleu », « Bleu (2) » */
     var vus = {};
     familles.forEach(function (fa) {
+      if (fa.couleurHex) { var deduit = nomDepuisFeuilles(fa.feuilles); if (deduit) fa.libelleAuto = deduit; }
       vus[fa.libelleAuto] = (vus[fa.libelleAuto] || 0) + 1;
       if (vus[fa.libelleAuto] > 1) fa.libelleAuto += ' (' + vus[fa.libelleAuto] + ')';
       var perso = noms[fa.cle];

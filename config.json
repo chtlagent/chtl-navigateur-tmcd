@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "raccourcis": [
     { "libelle": "Accueil", "motif": "^Accueil$", "choix": "premier" },
     { "libelle": "TMCD le plus récent", "motif": "^TMCD (\\d{4})$", "choix": "plusRecent" },
