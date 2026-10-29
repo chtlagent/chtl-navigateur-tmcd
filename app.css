@@ -21,7 +21,7 @@ button,input{font:inherit;color:inherit}
 .bandeau i{flex:1}.bandeau .o{background:var(--orange)}.bandeau .b{background:#134F9F}.bandeau .v{background:var(--vert)}
 .titre{background:#134F9F;color:#fff;margin:0 -12px;padding:6px 12px}
 .titre h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sous-titre{margin:1px 0 0;font-size:11px;opacity:.85}
+.sous-titre{margin:2px 0 0;font-size:12px;opacity:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btn.nav{padding:0 8px;font-weight:600;color:var(--bleu)}
 .barre{flex-wrap:wrap}
 .btn-leger{font-size:12px}

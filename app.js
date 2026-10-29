@@ -143,6 +143,7 @@
     }
     c.scrollTop = pos;
     if (defilerVersActif) { defilerVersActif = false; var a = c.querySelector('.ligne.active'); if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest' }); }
+    var fa0 = feuilleDe(actifId); $('feuille-active').textContent = fa0 ? fa0.name : ' '; $('feuille-active').title = fa0 ? 'Feuille ouverte : ' + fa0.name : '';
     var nb = N.compterVisibles(feuilles);
     etat((adapter.mode === 'demo' ? 'Aperçu hors Excel · ' : 'Connecté à Excel · ') + nb + ' feuille' + (nb > 1 ? 's' : '') + ' visible' + (nb > 1 ? 's' : ''), 'ok');
     majBoutons();
